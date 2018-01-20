@@ -1,0 +1,7 @@
+# ignore sublime project files
+*.sublime-project
+*.sublime-workspace
+# ignore .pyc files
+*.pyc
+# ingore .log files
+*.log
