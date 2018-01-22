@@ -14,8 +14,11 @@ class sub(sup):
         super(sub, self).__init__(name)
         self.somethingelse = somethingelse
 
-    def _privAction(self, hmm):
+    def _privActions(self, hmm):
         print self.name + self.somethingelse + hmm
+
+    def _printVar(self):
+        print self.somethingelse
 
 
 def main():
@@ -23,6 +26,7 @@ def main():
     p.takePrivAction()
     b = sub("subclass", " also this")
     b.takePrivAction()
+    b._printVar()
 
 
 if __name__ == '__main__':
