@@ -1,1 +1,11 @@
+<<<<<<< HEAD
 credentials.json
+=======
+# ignore sublime project files
+*.sublime-project
+*.sublime-workspace
+# ignore .pyc files
+*.pyc
+# ingore .log files
+*.log
+>>>>>>> 76ce739e2b202694f302872ab2ccdd39903e52d3
