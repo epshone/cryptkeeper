@@ -3,18 +3,21 @@ from datetime import datetime, timedelta
 import time
 import multiprocessing as mp
 import logging
+import sys
+import json
+from binance.client import Client
 
 
 # cancel after some number of seconds
 class example_monitor_order(monitor_order):
-    def __init__(self, seconds):
-        super(example_monitor_order, self).__init__()
+    def __init__(self, seconds, api_client):
+        super(example_monitor_order, self).__init__(api_client=api_client)
         self.seconds = seconds
         self.currtime = datetime.now()
 
     def _check_cancel_order(self):
-        if (datetime.now() >
-                self.currtime + timedelta(seconds=self.seconds)):
+        #if (datetime.now() >
+        #        self.currtime + timedelta(seconds=self.seconds)):
             # cancel the order here
             return True
 
@@ -24,25 +27,43 @@ class example_order(order):
     threshold = None
 
     def __init__(self, refresh_seconds, coin, threshold,
-                 monitor_obj=example_monitor_order(2)):
-        super(example_order, self).__init__(refresh_seconds, coin, monitor_obj)
+                 api_client, monitor_obj):
+        if monitor_obj is None:
+            monitor_obj=example_monitor_order(seconds=2, api_client=api_client)
+        super(example_order, self).__init__(refresh_seconds=refresh_seconds,
+                                            coin=coin,
+                                            monitor_order_obj=monitor_obj,
+                                            api_client=api_client)
         self.threshold = threshold
 
     def _check_place_order(self, coin_info):
         if (coin_info > self.threshold):
-            self.threshold += 5
+            self.threshold += 100
             return True
 
     def _get_order_params(self):
-        s = self.coin_i.coin_name + " @ " + str(self.coin_i.value)
-        return s
+        params = {
+            "price": "0.0001",
+            "amount": 200
+        }
+        return params
 
 
 def main():
     logging.basicConfig(filename='output.log', level=logging.DEBUG)
 
-    orderer = example_order(refresh_seconds=1, coin="ETH/AION",
-                            threshold=5)
+    if len(sys.argv) < 2:
+        api_key = str(raw_input("Enter your public Binance API key: "))
+        api_secret = str(raw_input("Enter your secret Binance API key: "))
+    else:
+        credentials = json.load(open(sys.argv[1]))
+        api_key = credentials['API_KEY']
+        api_secret = credentials['API_SECRET']
+
+    api_client = Client(api_key, api_secret)
+
+    orderer = example_order(refresh_seconds=1, coin="AIONETH",
+                            threshold=0, api_client=api_client, monitor_obj=None)
 
     # need the comma after the string otherwise python takes the input
     # as a list of characters...
