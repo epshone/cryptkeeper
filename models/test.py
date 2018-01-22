@@ -1,5 +1,3 @@
-import sys
-sys.path.insert(0, r'/Users/EvanShone/git/cryptkeeper')
 import triggers.test as test
 import logging
 from datetime import timedelta, datetime
@@ -39,7 +37,7 @@ class order_tester(object):
             self.new_action()
 
     def new_action(self):
-        logging.debug("Order " + str(8) + " placed: "
+        logging.debug("test Order " + str(8) + " placed: "
                       + self.get_order_params_fn(self.testing_order_obj))
 
     def new_watch(self):

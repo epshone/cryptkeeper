@@ -48,6 +48,10 @@ def main():
     # as a list of characters...
     p = mp.Process(target=orderer.watch)
     p.start()
+    x = mp.Process(target=orderer.watch)
+    x.start()
+    v = mp.Process(target=orderer.watch)
+    v.start()
     while(True):
         time.sleep(5)
         logging.debug("parent still kickin")
