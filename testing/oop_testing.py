@@ -14,7 +14,7 @@ class sub(sup):
         super(sub, self).__init__(name)
         self.somethingelse = somethingelse
 
-    def _privAction(self, hmm):
+    def _privActions(self, hmm):
         print self.name + self.somethingelse + hmm
 
 
