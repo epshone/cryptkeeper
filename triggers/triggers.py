@@ -24,7 +24,6 @@ class coin_info(object):
         self.bm.stop_connection(self.conn_key)
         self.conn_key = None
 
-
     def _aggregate_price_data(self, price):
         self.price_history.insert(0, price)
 

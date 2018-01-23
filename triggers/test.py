@@ -6,7 +6,7 @@ import logging
 import sys
 import json
 from binance.client import Client
-
+import input
 
 # cancel after some number of seconds
 class example_monitor_order(monitor_order):
@@ -52,30 +52,40 @@ class example_order(order):
 def main():
     logging.basicConfig(filename='output.log', level=logging.DEBUG)
 
-    if len(sys.argv) < 2:
-        api_key = str(raw_input("Enter your public Binance API key: "))
-        api_secret = str(raw_input("Enter your secret Binance API key: "))
-    else:
-        credentials = json.load(open(sys.argv[1]))
+    api_key = ""
+    api_secret = ""
+    try:
+        credentials = json.load(open("./credentials.json"))
         api_key = credentials['API_KEY']
         api_secret = credentials['API_SECRET']
+    except IOError:
+        try:
+            credentials = json.load(open("../credentials.json"))
+            api_key = credentials['API_KEY']
+            api_secret = credentials['API_SECRET']
+        except IOError:
+            api_key = str(raw_input("Enter your public Binance API key: "))
+            api_secret = str(raw_input("Enter your secret Binance API key: "))
 
-    api_client = Client(api_key, api_secret)
+    cli = input.CommandLineInterface(api_key=api_key,api_secret=api_secret)
+    cli.cmdloop()
 
-    orderer = example_order(refresh_seconds=1, coin="AIONETH",
-                            threshold=0, api_client=api_client, monitor_obj=None)
-
-    # need the comma after the string otherwise python takes the input
-    # as a list of characters...
-    p = mp.Process(target=orderer.watch)
-    p.start()
-    x = mp.Process(target=orderer.watch)
-    x.start()
-    v = mp.Process(target=orderer.watch)
-    v.start()
-    while(True):
-        time.sleep(5)
-        logging.debug("parent still kickin")
+    # api_client = Client(api_key, api_secret)
+    #
+    # orderer = example_order(refresh_seconds=1, coin="AIONETH",
+    #                         threshold=0, api_client=api_client, monitor_obj=None)
+    #
+    # # need the comma after the string otherwise python takes the input
+    # # as a list of characters...
+    # p = mp.Process(target=orderer.watch)
+    # p.start()
+    # x = mp.Process(target=orderer.watch)
+    # x.start()
+    # v = mp.Process(target=orderer.watch)
+    # v.start()
+    # while(True):
+    #     time.sleep(5)
+    #     logging.debug("parent still kickin")
 
 
 if __name__ == '__main__':
