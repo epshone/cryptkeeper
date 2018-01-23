@@ -15,15 +15,12 @@ class coin_info(object):
 
 
     def open_kline_websocket(self):
-        if self.conn_key is not None:
-            self.close_connection()
-
         conn_key = self.bm.start_kline_socket(self.coin_info, callback=self.aggregate_price_data, interval=KLINE_INTERVAL_1MINUTE)
         self.bm.start()
-        self.conn_key = conn_key
+        self.conn_keys.add(conn_key)
 
 
-    def close_connection(self):
+    def close_all_connections(self):
         self.bm.stop_connection(self.conn_key)
         self.conn_key = None
 
