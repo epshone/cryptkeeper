@@ -12,7 +12,7 @@ class coin_info(object):
         self.value = 0
         self.info = {}
         self.api_client = api_client
-
+        
     def get_coin_value(self):
         #ticker = self.api_client.get_symbol_ticker(symbol =self.coin_name)
         ticker = {"price": 1}
