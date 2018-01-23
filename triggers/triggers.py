@@ -1,28 +1,31 @@
+from binance.websockets import BinanceSocketManager
+from binance.enums import *
 import time
 import multiprocessing as mp
 import logging
-from binance.enums import *
 
 
-# data about a coin, just filler info
-# TODO: make this real info
+# Opens a websocket to continuosly gather coin information
 class coin_info(object):
-    def __init__(self, coin_name, api_client):
+    def __init__(self, socket_manager, coin_name):
         self.coin_name = coin_name
-        self.value = 0
-        self.info = {}
-        self.api_client = api_client
-        
-    def get_coin_value(self):
-        #ticker = self.api_client.get_symbol_ticker(symbol =self.coin_name)
-        ticker = {"price": 1}
-        self.value = float(ticker['price'])
-        logging.debug(self.coin_name + "price:" + str(self.value))
-        return self.value
+        self.price_history = {}
+        self.conn_key = None
+        self.bm = socket_manager
 
-    def get_coin_info(self):
-        ticker = self.api_client.get_symbol_ticker(symbol =self.coin_name)
-        self.info = ticker
+
+    def open_kline_websocket(self):
+        conn_key = self.bm.start_kline_socket(self.coin_info, callback=self.aggregate_price_data, interval=KLINE_INTERVAL_1MINUTE)
+        self.bm.start()
+        self.conn_keys.add(conn_key)
+
+
+    def close_all_connections(self):
+        self.bm.stop_connection(self.conn_key)
+        self.conn_key = None
+
+    def _aggregate_price_data(self, price):
+        self.price_history.insert(0, price)
 
 
 
