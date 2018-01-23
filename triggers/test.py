@@ -6,7 +6,7 @@ import logging
 import sys
 import json
 from binance.client import Client
-
+import input
 
 # cancel after some number of seconds
 class example_monitor_order(monitor_order):
@@ -67,7 +67,8 @@ def main():
             api_key = str(raw_input("Enter your public Binance API key: "))
             api_secret = str(raw_input("Enter your secret Binance API key: "))
 
-    CommandLineInterface().cmdloop()
+    cli = input.CommandLineInterface(api_key=api_key,api_secret=api_secret)
+    cli.cmdloop()
 
     # api_client = Client(api_key, api_secret)
     #
