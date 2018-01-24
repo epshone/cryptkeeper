@@ -34,8 +34,9 @@ class aggregator_manager(object):
        evaluation returns true"""
     def _evaluateTriggers(self):
         for trigger in self.triggers
-            if trigger._evaluate():
-                trigger._action()
+            result = trigger._evaluate()
+            if result is not None:
+                trigger._action(result)
 
 """Aggregates data about a given coin through the binance websocket manager"""
 class aggregator(object):
@@ -119,15 +120,8 @@ class trigger(object):
         pass
 
     # Take the action when _evaluate() returns true
-    def _action(self):
+    def _action(self, params):
         pass
-
-    # evaluate after every interval
-    def watch(self):
-        while(self.watching):
-            time.sleep(self.refresh_seconds)
-            if(self._evaluate()):
-                self._action()
 
     # kill yoself
     def kill(self):
@@ -151,8 +145,7 @@ class order(trigger):
         pass
 
     # Place the order and spawn a cancel order process if one is defined
-    def _action(self):
-        params = self._get_order_params()
+    def _action(self, params):
         order = self.api_client.create_order(symbol=self.coin_i.coin_name, side=SIDE_BUY,
             type=ORDER_TYPE_LIMIT, timeInForce=TIME_IN_FORCE_GTC,
             quantity=params['amount'], price=params['price'])
