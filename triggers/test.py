@@ -1,4 +1,4 @@
-from triggers import order, monitor_order
+from triggers import order, monitor_order, aggregator
 from datetime import datetime, timedelta
 import time
 import multiprocessing as mp
@@ -6,6 +6,7 @@ import logging
 import sys
 import json
 from binance.client import Client
+from binance.websockets import BinanceSocketManager
 import input
 
 # cancel after some number of seconds
@@ -26,7 +27,7 @@ class example_monitor_order(monitor_order):
 class example_order(order):
     threshold = None
 
-    def __init__(self, refresh_seconds, coin, threshold,
+    def __init__(self, refresh_seconds, threshold,
                  api_client, monitor_obj):
         if monitor_obj is None:
             monitor_obj=example_monitor_order(seconds=2, api_client=api_client)
@@ -49,44 +50,8 @@ class example_order(order):
         return params
 
 
-def main():
-    logging.basicConfig(filename='output.log', level=logging.DEBUG)
-
-    api_key = ""
-    api_secret = ""
-    try:
-        credentials = json.load(open("./credentials.json"))
-        api_key = credentials['API_KEY']
-        api_secret = credentials['API_SECRET']
-    except IOError:
-        try:
-            credentials = json.load(open("../credentials.json"))
-            api_key = credentials['API_KEY']
-            api_secret = credentials['API_SECRET']
-        except IOError:
-            api_key = str(raw_input("Enter your public Binance API key: "))
-            api_secret = str(raw_input("Enter your secret Binance API key: "))
-
-    cli = input.CommandLineInterface(api_key=api_key,api_secret=api_secret)
-    cli.cmdloop()
-
-    # api_client = Client(api_key, api_secret)
-    #
-    # orderer = example_order(refresh_seconds=1, coin="AIONETH",
-    #                         threshold=0, api_client=api_client, monitor_obj=None)
-    #
-    # # need the comma after the string otherwise python takes the input
-    # # as a list of characters...
-    # p = mp.Process(target=orderer.watch)
-    # p.start()
-    # x = mp.Process(target=orderer.watch)
-    # x.start()
-    # v = mp.Process(target=orderer.watch)
-    # v.start()
-    # while(True):
-    #     time.sleep(5)
-    #     logging.debug("parent still kickin")
-
-
-if __name__ == '__main__':
-    main()
+def startTrigger(socket_manager):
+    triggers = []
+    triggers.add(example_order(refresh_seconds=1, ))
+    eth_usdt_agg = aggregator(socket_manager=socket_manager, coin_name='ETHUSDT'
+                              order_triggers=e)
