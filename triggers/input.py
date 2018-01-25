@@ -44,7 +44,7 @@ class CommandLineInterface(cmd.Cmd,object):
         print "\n Goodbye. I hope you're rich now \n"
         return True
 
-    def do_startTrigger(self, arg):
+    def do_startAggregator(self, arg):
         print "\nStarting test trigger...\n"
         p = mp.Process(target=test.startTrigger, args=(self.bm,))
         p.start()
