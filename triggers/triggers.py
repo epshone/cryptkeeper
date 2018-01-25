@@ -1,6 +1,5 @@
 from binance.enums import *
 import time
-import multiprocessing as mp
 import logging
 
 
@@ -34,7 +33,7 @@ class aggregator_manager(object):
         """Create a new aggregator of a given coin's data."""
         new_aggregator = aggregator(socket_manager=self.bm,
                                     coin_name=coin_name)
-        self.aggregators[coin_name] = aggregator
+        self.aggregators[coin_name] = new_aggregator
         logging.debug("Aggregator for " + coin_name + " created.")
 
     def _tick(self):
@@ -223,7 +222,6 @@ class monitor_order(trigger):
                                           orderId=self.order_id)
         logging.debug(order)
         return order['status'] == "COMPLETE"
-
 
     # Cancel the order
     def _action(self):
