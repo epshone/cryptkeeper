@@ -46,7 +46,8 @@ class CommandLineInterface(cmd.Cmd,object):
 
     def do_startTrigger(self, arg):
         print "\nStarting test trigger...\n"
-        test.startTrigger(self.bm)
+        p = mp.Process(target=test.startTrigger, args=(self.bm,))
+        p.start()
 
 if __name__ == '__main__':
     CommandLineInterface().cmdloop()

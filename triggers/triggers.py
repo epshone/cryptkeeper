@@ -14,12 +14,17 @@ class aggregator_manager(object):
         self.conn_keys = []
         self.bm = socket_manager
         self.triggers = []
+        self.paused = False
+        self._tick_freq = 1/60
         logging.debug("Aggregator manager created.")
+
+    def start(self):
+        self.paused = False
+        self._tick()
 
     def add_trigger_function(self, trigger):
         """Add a new trigger function to be managed by this manager."""
         self.triggers.append(trigger)
-
         for coin in trigger.coin_names:
             if coin not in self.aggregators:
                 self._create_aggregator(coin)
@@ -27,7 +32,8 @@ class aggregator_manager(object):
 
     def _create_aggregator(self, coin_name):
         """Create a new aggregator of a given coin's data."""
-        new_aggregator = aggregator(socket_manager=self.bm, coin_name=coin_name)
+        new_aggregator = aggregator(socket_manager=self.bm,
+                                    coin_name=coin_name)
         self.aggregators[coin_name] = aggregator
         logging.debug("Aggregator for " + coin_name + " created.")
 
@@ -36,7 +42,9 @@ class aggregator_manager(object):
         The logic that is performed each time after a
         predetermined delay.
         """
-        self._evaluateTriggers()
+        while self.paused is False:
+            self._evaluateTriggers()
+            time.sleep(self._tick_freq)
 
     def _evaluateTriggers(self):
         for trigger in self.triggers:
@@ -51,7 +59,7 @@ class aggregator(object):
     through the binance websocket manager.
     """
 
-    def __init__(socket_manager, coin_name):
+    def __init__(self, socket_manager, coin_name):
         """Initialize the aggregator class."""
         self._conn_keys = []
         self._bm = socket_manager
@@ -61,7 +69,7 @@ class aggregator(object):
         # Start the websockets and the socket manager
         self._open_kline_websocket()
         self._open_depth_websocket()
-        self.bm.start()
+        self._bm.start()
 
     def _open_kline_websocket(self):
         """
@@ -71,16 +79,16 @@ class aggregator(object):
         conn_key = self._bm.start_kline_socket(self.coin_name,
                                                callback=self._aggregate_kline_data,
                                                interval=KLINE_INTERVAL_5MINUTE)
-        self.conn_keys.append(conn_key)
+        self._conn_keys.append(conn_key)
 
-    def _open_depth_socket(self):
+    def _open_depth_websocket(self):
         """
         Open the depth websocket and add the connection to the
         list of open connections.
         """
         conn_key = self._bm.start_depth_socket(self.coin_name,
                                                callback=self._aggregate_depth_data)
-        self.conn_keys.append(conn_key)
+        self._conn_keys.append(conn_key)
 
     """Add the KLine data returned from the websocket to the KLine array"""
     def _aggregate_kline_data(self, data):
@@ -134,9 +142,9 @@ class aggregator(object):
 
     def close_all_connections(self):
         """Close all open websocket connections."""
-        for conn_key in self.conn_keys:
-            self.bm.stop_connection(conn_key)
-        self.conn_keys = []
+        for conn_key in self._conn_keys:
+            self._bm.stop_connection(conn_key)
+        self._conn_keys = []
 
 
 class trigger(object):
@@ -171,7 +179,7 @@ class order(trigger):
     Implementations override _check_place_order(), _get_order_params().
     """
 
-    def __init__(self, refresh_seconds=1, coin_names=None,
+    def __init__(self, coin_names, refresh_seconds=1,
                  monitor_order_obj=None):
         super(order, self).__init__(refresh_seconds=refresh_seconds,
                                     coin_names=coin_names)
@@ -193,7 +201,8 @@ class order(trigger):
         pass
 
     def _evaluate(self):
-        pass
+        if(self._check_place_order(self.coin_names[0])):
+            return {"response": "true tho..."}
 
 
 # base order monitoring class

@@ -43,3 +43,4 @@ def startTrigger(socket_manager):
                                                    coin_names=["ETHUSDT"],
                                                    threshold=0,
                                                    monitor_obj=None))
+    agg_manager.start()
