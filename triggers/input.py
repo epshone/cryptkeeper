@@ -3,13 +3,13 @@ import cmd, json
 from binance.client import Client
 from binance.websockets import BinanceSocketManager
 from binance.enums import *
+from pull import TickerInfo
 import test
 import multiprocessing as mp
 
+
 # TODO maintain a list of web sockets
-
-class CommandLineInterface(cmd.Cmd,object):
-
+class CommandLineInterface(cmd.Cmd, object):
     # Load API credentials
     api_key = ""
     api_secret = ""
@@ -45,9 +45,23 @@ class CommandLineInterface(cmd.Cmd,object):
         return True
 
     def do_startAggregator(self, arg):
+        "\nTest Triggers\n"
         print "\nStarting test trigger...\n"
         p = mp.Process(target=test.startTrigger, args=(self.bm,))
         p.start()
+
+    def do_pullTickerData(self, arg):
+        "\nPull all ticker data every .1 seconds and write to file\n"
+        print "\nPulling data\n"
+        self.pull = TickerInfo(client=self.api_client)
+        p = mp.Process(target=self.pull.pullTickerInfo)
+        p.start()
+
+    def do_stopTickerData(self, arg):
+        "\nStop pulling data (this doesn't work)\n"
+        print "\nStopping the data pull.\n"
+        self.pull.stopPull()
+
 
 if __name__ == '__main__':
     CommandLineInterface().cmdloop()
