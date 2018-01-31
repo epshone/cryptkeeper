@@ -23,7 +23,6 @@ class TickerInfo(object):
                         now = "{\n\t\"time\": \"" + currDate + "\",\n"
                         info = "\t\"data\": \"" + info + "\"\n},\n"
                         write = now + info
-                        logging.debug("info: " + write)
                         ticker_file.write(write)
 
             except IOError:
