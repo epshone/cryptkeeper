@@ -14,7 +14,7 @@ class aggregator_manager(object):
         self.bm = socket_manager
         self.triggers = []
         self.paused = False
-        self._tick_freq = 1/60
+        self._tick_freq = 0.25
         logging.debug("Aggregator manager created.")
 
     def start(self):
@@ -24,9 +24,13 @@ class aggregator_manager(object):
     def add_trigger_function(self, trigger):
         """Add a new trigger function to be managed by this manager."""
         self.triggers.append(trigger)
+        result = {}
+
         for coin in trigger.coin_names:
             if coin not in self.aggregators:
-                self._create_aggregator(coin)
+                aggregator = self._create_aggregator(coin)
+                result[coin] = aggregator
+        trigger.set_aggregators(result)
         logging.debug("Trigger function added to manager.")
 
     def _create_aggregator(self, coin_name):
@@ -35,6 +39,10 @@ class aggregator_manager(object):
                                     coin_name=coin_name)
         self.aggregators[coin_name] = new_aggregator
         logging.debug("Aggregator for " + coin_name + " created.")
+        return new_aggregator
+
+    def get_aggregator(self, coin_name):
+        return self.aggregators[coin_name]
 
     def _tick(self):
         """
@@ -120,9 +128,16 @@ class aggregator(object):
         json = {}
         for data in self._kline_data:
             for field in fields:
-                json[field] = data[field]
+                json[field] = data['k'][field]
             result.append(json)
             json = {}
+        return result
+
+    def get_prices(self):
+        result = []
+        prices = self.get_fields_from_kline('c')
+        for price in prices:
+            result.append(float(price['c']))
         return result
 
     def get_fields_from_depth(self, fields):
@@ -156,6 +171,14 @@ class trigger(object):
     def __init__(self, coin_names, refresh_seconds=1):
         self.coin_names = coin_names
         self.refresh_seconds = refresh_seconds
+
+    def set_aggregators(self, aggregators):
+        """Set the aggregators that this trigger function needs to know about.
+
+           Used by the aggregator manager when trigger function is added.
+        """
+        self._aggregators = aggregators
+        logging.debug("Manager set.")
 
     # Should we take the action?
     def _evaluate(self):

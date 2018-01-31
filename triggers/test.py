@@ -1,4 +1,4 @@
-from triggers import order, monitor_order, aggregator_manager
+from triggers import order, monitor_order, aggregator_manager, aggregator
 from datetime import datetime, timedelta
 import time
 import multiprocessing as mp
@@ -8,6 +8,7 @@ import json
 from binance.client import Client
 from binance.websockets import BinanceSocketManager
 import input
+
 
 # cancel after some number of seconds
 class example_monitor_order(monitor_order):
@@ -31,16 +32,19 @@ class example_order(order):
                                             monitor_order_obj=monitor_obj)
         self.threshold = threshold
 
-    def _check_place_order(self, coin_info):
-        if (1 > self.threshold):
-            self.threshold += 100
-            return True
+    def _check_place_order(self, coin):
+        prices = self._aggregators[coin].get_prices()
+        if(len(prices) < 2):
+            return False
+        if(prices[0]-prices[1] > self.threshold):
+            logging.debug(str(prices[0]) + " " + str(prices[1]))
+            return False
 
 
 def startTrigger(socket_manager):
     agg_manager = aggregator_manager(socket_manager)
     agg_manager.add_trigger_function(example_order(refresh_seconds=2,
                                                    coin_names=["ETHUSDT"],
-                                                   threshold=0,
+                                                   threshold=1,
                                                    monitor_obj=None))
     agg_manager.start()
