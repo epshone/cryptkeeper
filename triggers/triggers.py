@@ -1,6 +1,31 @@
 from binance.enums import *
+import multiprocessing as mp
 import time
 import logging
+
+ALL_TICKERS_AGGREGATOR = "ALL_COINS"
+
+
+class order(object):
+    def __init__(self, price, amount, time):
+        self.price = price
+        self.amount = amount
+        self.time = time
+
+
+class coin_orders(object):
+    """
+    the price of a coin at a time
+    """
+    def __init__(self, coin):
+        self.coin = coin
+        self.orders = []
+
+    def place_order(self, order):
+        self.orders.append(order)
+
+    def get_orders(self):
+        return self.orders
 
 
 class aggregator_manager(object):
@@ -14,7 +39,7 @@ class aggregator_manager(object):
         self.bm = socket_manager
         self.triggers = []
         self.paused = False
-        self._tick_freq = 0.25
+        self._tick_freq = 0.1
         logging.debug("Aggregator manager created.")
 
     def start(self):
@@ -28,10 +53,21 @@ class aggregator_manager(object):
 
         for coin in trigger.coin_names:
             if coin not in self.aggregators:
-                aggregator = self._create_aggregator(coin)
+                aggregator = None
+                if coin == ALL_TICKERS_AGGREGATOR:
+                    aggregator = self._create_all_ticker()
+                else:
+                    aggregator = self._create_aggregator(coin)
+
                 result[coin] = aggregator
         trigger.set_aggregators(result)
         logging.debug("Trigger function added to manager.")
+
+    def _create_all_ticker(self):
+        new_all_ticker = all_ticker(socket_manager=self.bm)
+        self.aggregators[ALL_TICKERS_AGGREGATOR] = new_all_ticker
+        logging.debug("All ticker created")
+        return new_all_ticker
 
     def _create_aggregator(self, coin_name):
         """Create a new aggregator of a given coin's data."""
@@ -50,14 +86,61 @@ class aggregator_manager(object):
         predetermined delay.
         """
         while self.paused is False:
+            self._gatherData()
             self._evaluateTriggers()
             time.sleep(self._tick_freq)
+
+    def _gatherData(self):
+        for key in self.aggregators:
+            self.aggregators[key].gatherData()
 
     def _evaluateTriggers(self):
         for trigger in self.triggers:
             result = trigger._evaluate()
             if result is not None:
                 trigger._action(result)
+
+
+class all_ticker(object):
+    """
+    Starts a web socket that pulls the current
+    price of all coins.
+    """
+    def __init__(self, socket_manager):
+        self._bm = socket_manager
+        self.ticker_data = []
+        self.q = mp.Queue()
+        # Start the websocket
+        if self._bm:
+            self._conn_key = self._bm.start_ticker_socket(callback=self._aggregate_data)
+
+    def _aggregate_data(self, data):
+        """ Append the ticker data """
+        logging.debug("callback - put data")
+        self.q.put(data)
+
+    def gatherData(self):
+        """ Pull from the pipe if it's not empty """
+        if not(self.q.empty()):
+            data = self.q.get()
+            # Will to the rescue!!
+            self.ticker_data.append(data)
+            logging.debug("Gathered data: " + str(data))
+
+    def close_connection(self, data):
+        """ Close the connection """
+        self._bm.stop_connection(self._conn_key)
+
+    def get_ticker_data(self):
+        """ return all the data """
+        return self.ticker_data
+
+    def get_price_increase(self, percent, timeframe):
+        """
+        Returns coins that have increased in price by some
+        percent over the given timeframe
+        """
+        pass
 
 
 class aggregator(object):
@@ -71,6 +154,8 @@ class aggregator(object):
         self._conn_keys = []
         self._bm = socket_manager
         self.coin_name = coin_name
+        self._kline_queue = mp.Queue()
+        self._depth_queue = mp.Queue()
         self._kline_data = []
         self._depth_data = []
         # Start the websockets and the socket manager
@@ -99,11 +184,23 @@ class aggregator(object):
 
     """Add the KLine data returned from the websocket to the KLine array"""
     def _aggregate_kline_data(self, data):
-        self._kline_data.append(data)
+        self._kline_queue.put(data)
 
     """Add the depth data returned from the websocket to the depth array"""
     def _aggregate_depth_data(self, data):
-        self._depth_data.append(data)
+        self._depth_queue.put(data)
+
+    def gatherData(self):
+        """ Pull from the pipe if it's not empty """
+        if not(self._kline_queue.empty()):
+            data = self._kline_queue.get()
+            self._kline_data.append(data)
+            logging.debug("Gathered kline data: " + data)
+
+        if not(self._depth_queue.empty()):
+            data = self._depth_queue.get()
+            self._depth_data.append(data)
+            logging.debug("Gathered depth data: " + data)
 
     def get_all_kline_data(self):
         """
@@ -187,11 +284,6 @@ class trigger(object):
     # Take the action when _evaluate() returns true
     def _action(self, params):
         pass
-
-    # kill yoself
-    def kill(self):
-        # TODO: better?
-        self.watching = False
 
 
 class order(trigger):

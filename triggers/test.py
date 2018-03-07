@@ -1,4 +1,4 @@
-from triggers import order, monitor_order, aggregator_manager, aggregator
+from triggers import order, monitor_order, aggregator_manager, aggregator, trigger
 from datetime import datetime, timedelta
 import time
 import multiprocessing as mp
@@ -41,10 +41,25 @@ class example_order(order):
             return False
 
 
+class test_all_tickers(trigger):
+    def __init__(self):
+        super(test_all_tickers, self).__init__(coin_names=["ALL_COINS"])
+
+    def _evaluate(self):
+        data = self._aggregators["ALL_COINS"].get_ticker_data()
+        logging.debug("in evaluate: " + str(data))
+
+    def _action(self, params):
+        logging.debug("ACTION")
+
+
 def startTrigger(socket_manager):
+    logging.basicConfig(filename='output.log', level=logging.DEBUG)
     agg_manager = aggregator_manager(socket_manager)
-    agg_manager.add_trigger_function(example_order(refresh_seconds=2,
-                                                   coin_names=["ETHUSDT"],
-                                                   threshold=1,
-                                                   monitor_obj=None))
+    # test_fn = example_order(refresh_seconds=2,
+    #                         coin_names=["ETHUSDT"],
+    #                         threshold=1,
+    #                         monitor_obj=None)
+    test_fn = test_all_tickers()
+    agg_manager.add_trigger_function(test_fn)
     agg_manager.start()

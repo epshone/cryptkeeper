@@ -1,6 +1,47 @@
-import triggers.test as test
+from triggers import aggregator_manager, all_ticker, trigger
 import logging
+import time
 from datetime import timedelta, datetime
+import json
+import multiprocessing as mp
+
+
+ALL_TICKERS_AGGREGATOR = "ALL_COINS"
+
+
+class test_aggregator_manager(aggregator_manager):
+    def __init__(self):
+        super(test_aggregator_manager, self).__init__(socket_manager=None)
+        logging.debug("Test^^^")
+
+    def _create_all_ticker(self):
+        new_all_ticker = test_all_ticker()
+        self.aggregators[ALL_TICKERS_AGGREGATOR] = new_all_ticker
+        return new_all_ticker
+
+    def _create_aggregator(self, coin_name):
+        pass
+
+
+class test_all_ticker(all_ticker):
+    def __init__(self):
+        super(test_all_ticker, self).__init__(socket_manager=None)
+        logging.debug("Test All ticker created")
+        self.go = True
+        self._tick_freq = 0.25
+        self.data = json.load(open('data.json'))
+        self.i = 0
+        p = mp.Process(target=self.aggregate)
+        p.start()
+
+    def aggregate(self):
+        while self.go:
+            time.sleep(self._tick_freq)
+            self.ticker_data.append(self.data[self.i])
+            logging.debug("data" + str(self.ticker_data))
+
+    def close_connection(self, data):
+        self.go = False
 
 
 class order_tester(object):
@@ -52,12 +93,33 @@ class order_tester(object):
                 self.new_action()
 
 
+class test_all_tickers(trigger):
+    def __init__(self):
+        super(test_all_tickers, self).__init__(coin_names=["ALL_COINS"])
+
+    def _evaluate(self):
+        data = self._aggregators["ALL_COINS"].get_ticker_data()
+        logging.debug("in evaluate: " + str(data))
+
+    def _action(self, params):
+        logging.debug("ACTION")
+
+
 def main():
-    tester = order_tester(test.example_order)
-    tester.test(coin="AION/ETH",
-                start_datetime=datetime.now() - timedelta(seconds=10),
-                end_datetime=datetime.now(),
-                refresh_rate=1)
+    # tester = order_tester(test.example_order)
+    # tester.test(coin="AION/ETH",
+    #             start_datetime=datetime.now() - timedelta(seconds=10),
+    #             end_datetime=datetime.now(),
+    #             refresh_rate=1)
+    logging.basicConfig(filename='output.log', level=logging.DEBUG)
+    test_agg_manager = test_aggregator_manager()
+    # test_fn = example_order(refresh_seconds=2,
+    #                         coin_names=["ETHUSDT"],
+    #                         threshold=1,
+    #                         monitor_obj=None)
+    test_fn = test_all_tickers()
+    test_agg_manager.add_trigger_function(test_fn)
+    test_agg_manager.start()
     logging.debug("done")
 
 

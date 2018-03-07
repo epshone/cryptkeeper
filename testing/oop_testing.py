@@ -1,33 +1,16 @@
-class sup(object):
-    def __init__(self, name):
-        self.name = name
+from multiprocessing import Process, Queue
+import time
 
-    def takePrivAction(self):
-        self._privAction()
-
-    def _privAction(self):
-        print self.name + " private Action Taken"
-
-
-class sub(sup):
-    def __init__(self, name, somethingelse):
-        super(sub, self).__init__(name)
-        self.somethingelse = somethingelse
-
-    def _privActions(self, hmm):
-        print self.name + self.somethingelse + hmm
-
-    def _printVar(self):
-        print self.somethingelse
-
-
-def main():
-    p = sup("parent!")
-    p.takePrivAction()
-    b = sub("subclass", " also this")
-    b.takePrivAction()
-    b._printVar()
-
+def f(q):
+    print "sdfsdf"
+    q.put([42, None, 'hello'])
+    print "sdfssdfsdfsddf"
+    q.put("sdf")
 
 if __name__ == '__main__':
-    main()
+    q = Queue()
+    p = Process(target=f, args=(q,))
+    p.start()
+    time.sleep(1)
+    print q.empty()
+
