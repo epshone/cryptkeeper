@@ -1,5 +1,6 @@
 # Command Line Input
-import cmd, json
+import cmd
+import json
 from binance.client import Client
 from binance.websockets import BinanceSocketManager
 from binance.enums import *
@@ -53,15 +54,13 @@ class CommandLineInterface(cmd.Cmd, object):
     def do_pullTickerData(self, arg):
         "\nPull all ticker data every .1 seconds and write to file\n"
         print "\nPulling data\n"
-        self.pull = TickerInfo(client=self.api_client)
-        p = mp.Process(target=self.pull.pullTickerInfo)
+        self.pullTickerQueue = mp.Queue()
+        pull = TickerInfo(client=self.api_client,
+                          queue=self.pullTickerQueue)
+        p = mp.Process(target=pull.pullTickerInfo)
         p.start()
 
     def do_stopTickerData(self, arg):
-        "\nStop pulling data (this doesn't work)\n"
+        "\nStop pulling data\n"
         print "\nStopping the data pull.\n"
-        self.pull.stopPull()
-
-
-if __name__ == '__main__':
-    CommandLineInterface().cmdloop()
+        self.pullTickerQueue.put("stop")

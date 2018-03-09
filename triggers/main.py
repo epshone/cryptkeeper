@@ -1,10 +1,12 @@
-import logging, sys, json, input
-from binance.client import Client
+import logging
+import cli
+
 
 def main():
     logging.basicConfig(filename='output.log', level=logging.DEBUG)
-    cli = input.CommandLineInterface()
-    cli.cmdloop()
+    interface = cli.CommandLineInterface()
+    interface.cmdloop()
+
 
 if __name__ == '__main__':
     main()
